@@ -179,9 +179,9 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
 name = "aws-lc-rs"
-version = "1.16.1"
+version = "1.16.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94bffc006df10ac2a68c83692d734a465f8ee6c5b384d8545a636f81d858f4bf"
+checksum = "0ec6fb3fe69024a75fa7e1bfb48aa6cf59706a101658ea01bfd33b2b248a038f"
 dependencies = [
  "aws-lc-sys",
  "zeroize",
@@ -189,9 +189,9 @@ dependencies = [
 
 [[package]]
 name = "aws-lc-sys"
-version = "0.38.0"
+version = "0.40.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4321e568ed89bb5a7d291a7f37997c2c0df89809d7b6d12062c81ddb54aa782e"
+checksum = "f50037ee5e1e41e7b8f9d161680a725bd1626cb6f8c7e901f91f942850852fe7"
 dependencies = [
  "cc",
  "cmake",
@@ -1490,7 +1490,7 @@ dependencies = [
  "opentelemetry",
  "percent-encoding",
  "portable-atomic",
- "rand 0.9.0",
+ "rand 0.9.4",
  "thiserror 2.0.12",
 ]
 
@@ -1650,7 +1650,7 @@ checksum = "bee689443a2bd0a16ab0348b52ee43e3b2d1b1f931c8aa5c9f8de4c86fbe8c40"
 dependencies = [
  "bitflags",
  "num-traits",
- "rand 0.9.0",
+ "rand 0.9.4",
  "rand_chacha 0.9.0",
  "rand_xorshift",
  "regex-syntax",
@@ -1736,13 +1736,12 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.9.0"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3779b94aeb87e8bd4e834cee3650289ee9e0d5677f976ecdb6d219e5f4f6cd94"
+checksum = "44c5af06bb1b7d3216d91932aed5265164bf384dc89cd6ba05cf59a35f5f76ea"
 dependencies = [
  "rand_chacha 0.9.0",
  "rand_core 0.9.3",
- "zerocopy 0.8.24",
 ]
 
 [[package]]
@@ -1852,8 +1851,8 @@ dependencies = [
 
 [[package]]
 name = "rotel"
-version = "0.2.0"
-source = "git+https://github.com/streamfold/rotel?rev=v0.2.0#bfb82031ffadaba75cb4283fbd057615e7f68346"
+version = "0.2.2"
+source = "git+https://github.com/streamfold/rotel?rev=v0.2.2#6647ad7158ece052673f55a3b11406b19dee3e26"
 dependencies = [
  "base64",
  "bstr",
@@ -2707,7 +2706,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "utilities"
 version = "0.0.1"
-source = "git+https://github.com/streamfold/rotel?rev=v0.2.0#bfb82031ffadaba75cb4283fbd057615e7f68346"
+source = "git+https://github.com/streamfold/rotel?rev=v0.2.2#6647ad7158ece052673f55a3b11406b19dee3e26"
 dependencies = [
  "chrono",
  "opentelemetry-proto",
