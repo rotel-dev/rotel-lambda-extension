@@ -85,6 +85,30 @@ impl EnvArnParser {
     }
 }
 
+// Secrets Manager always returns the full ARN with its 6-char random suffix (e.g.
+// "myapp/api_key-AbCdEf") even when the caller specified the ARN without one.
+// Strip it so the returned ARN can be matched back to the user-supplied ARN.
+fn strip_sm_arn_suffix(arn_str: &str) -> Option<String> {
+    let last_colon = arn_str.rfind(':')?;
+    let resource_id = &arn_str[last_colon + 1..];
+    if resource_id.len() < 7 {
+        return None;
+    }
+    let suffix_start = resource_id.len() - 7;
+    let potential_suffix = &resource_id[suffix_start..];
+    if potential_suffix.starts_with('-')
+        && potential_suffix[1..].chars().all(|c| c.is_ascii_alphanumeric())
+    {
+        Some(format!(
+            "{}{}",
+            &arn_str[..last_colon + 1],
+            &resource_id[..suffix_start]
+        ))
+    } else {
+        None
+    }
+}
+
 pub async fn resolve_secrets(
     aws_creds: AwsCreds,
     secure_arns: &mut HashMap<String, String>,
@@ -143,7 +167,12 @@ pub async fn resolve_secrets(
                     Ok(res) => {
                         for (arn, secret) in res {
                             let aws_arn = arn.parse::<AwsArn>()?;
-                            match arns_by_base.get(&aws_arn) {
+                            let lookup = arns_by_base.get(&aws_arn).or_else(|| {
+                                strip_sm_arn_suffix(&arn)
+                                    .and_then(|s| s.parse::<AwsArn>().ok())
+                                    .and_then(|a| arns_by_base.get(&a))
+                            });
+                            match lookup {
                                 None => {
                                     return Err(format!(
                                         "Returned secret ARN was not found: {}",
@@ -231,9 +260,27 @@ pub async fn resolve_secrets(
 mod tests {
     use rotel::aws_api::creds::AwsCreds;
 
-    use crate::env::{EnvArnParser, resolve_secrets};
+    use crate::env::{EnvArnParser, resolve_secrets, strip_sm_arn_suffix};
     use crate::test_util::{init_crypto, parse_test_arns};
     use std::collections::HashMap;
+
+    #[test]
+    fn test_strip_sm_arn_suffix() {
+        let full = "arn:aws:secretsmanager:eu-central-1:123456789012:secret:myapp/api_key-AbCdEf";
+        let without = "arn:aws:secretsmanager:eu-central-1:123456789012:secret:myapp/api_key";
+        assert_eq!(strip_sm_arn_suffix(full), Some(without.to_string()));
+
+        // Already without suffix — no change
+        assert_eq!(strip_sm_arn_suffix(without), None);
+
+        // Suffix-looking but only 5 chars after dash — not stripped
+        let five = "arn:aws:secretsmanager:us-east-1:123456789012:secret:name-AbCdE";
+        assert_eq!(strip_sm_arn_suffix(five), None);
+
+        // Simple name (no suffix)
+        let simple = "arn:aws:secretsmanager:us-east-1:123456789012:secret:short";
+        assert_eq!(strip_sm_arn_suffix(simple), None);
+    }
 
     #[test]
     fn test_extract_and_update_arns_from_env() {
