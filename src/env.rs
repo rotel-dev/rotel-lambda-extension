@@ -97,7 +97,9 @@ fn strip_sm_arn_suffix(arn_str: &str) -> Option<String> {
     let suffix_start = resource_id.len() - 7;
     let potential_suffix = &resource_id[suffix_start..];
     if potential_suffix.starts_with('-')
-        && potential_suffix[1..].chars().all(|c| c.is_ascii_alphanumeric())
+        && potential_suffix[1..]
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric())
     {
         Some(format!(
             "{}{}",
