@@ -1441,8 +1441,9 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "opentelemetry"
-version = "0.31.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust?rev=0948c61#0948c616cea77311165cd5a0e54f719679543ef9"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0142c63252a9e054e68a4c61a5778f7b14f576274d593f8ce883d191a099682"
 dependencies = [
  "futures-core",
  "futures-sink",
@@ -1454,8 +1455,9 @@ dependencies = [
 
 [[package]]
 name = "opentelemetry-proto"
-version = "0.31.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust?rev=0948c61#0948c616cea77311165cd5a0e54f719679543ef9"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56d658ba1faf63f7b9c492cfbe6e0ec365440a16132d3270c1065f7b33f1b638"
 dependencies = [
  "base64",
  "const-hex",
@@ -1469,20 +1471,15 @@ dependencies = [
 
 [[package]]
 name = "opentelemetry-semantic-conventions"
-version = "0.29.0"
+version = "0.32.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84b29a9f89f1a954936d5aa92f19b2feec3c8f3971d3e96206640db7f9706ae3"
-
-[[package]]
-name = "opentelemetry-semantic-conventions"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83d059a296a47436748557a353c5e6c5705b9470ef6c95cfc52c21a8814ddac2"
+checksum = "c913ac17a6c451661ee255f4625d143e51647ae78ebd969b75e41c4442f4fe47"
 
 [[package]]
 name = "opentelemetry_sdk"
-version = "0.31.0"
-source = "git+https://github.com/open-telemetry/opentelemetry-rust?rev=0948c61#0948c616cea77311165cd5a0e54f719679543ef9"
+version = "0.32.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b59f80e1ac4d5ff7a2db8fb6c80badb7f0f3f858211fba08dd9aaec750894f9"
 dependencies = [
  "futures-channel",
  "futures-executor",
@@ -1851,8 +1848,8 @@ dependencies = [
 
 [[package]]
 name = "rotel"
-version = "0.2.2"
-source = "git+https://github.com/streamfold/rotel?rev=v0.2.2#6647ad7158ece052673f55a3b11406b19dee3e26"
+version = "0.2.4"
+source = "git+https://github.com/streamfold/rotel?rev=v0.2.4#c692fc4be59920311431def8c582ae35da2978de"
 dependencies = [
  "base64",
  "bstr",
@@ -1882,7 +1879,7 @@ dependencies = [
  "num_cpus",
  "opentelemetry",
  "opentelemetry-proto",
- "opentelemetry-semantic-conventions 0.29.0",
+ "opentelemetry-semantic-conventions",
  "opentelemetry_sdk",
  "pin-project",
  "portable-atomic",
@@ -1931,7 +1928,7 @@ dependencies = [
  "hyper-util",
  "lambda-extension",
  "opentelemetry-proto",
- "opentelemetry-semantic-conventions 0.30.0",
+ "opentelemetry-semantic-conventions",
  "regex",
  "rotel",
  "rustls",
@@ -2706,7 +2703,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "utilities"
 version = "0.0.1"
-source = "git+https://github.com/streamfold/rotel?rev=v0.2.2#6647ad7158ece052673f55a3b11406b19dee3e26"
+source = "git+https://github.com/streamfold/rotel?rev=v0.2.4#c692fc4be59920311431def8c582ae35da2978de"
 dependencies = [
  "chrono",
  "opentelemetry-proto",
