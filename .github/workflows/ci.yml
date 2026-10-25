@@ -37,15 +37,19 @@ jobs:
           target: ${{ matrix.target }}
           rustflags: ""
 
-      # dependabot does not have access to secrets, skip for dependency updates
+      # Skip the AWS steps when secrets are unavailable: dependabot runs and
+      # pull requests from forks get neither repo secrets nor an OIDC token,
+      # so assuming the CI role would fail. The TEST_* env vars must also stay
+      # completely unset (not set to empty) so the AWS-dependent tests skip
+      # themselves cleanly.
       - name: Configure AWS credentials
-        if: ${{ github.actor != 'dependabot[bot]' }}
+        if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.fork != true }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_LAMBDA_CI_ROLE_ARN }}
           aws-region: us-east-1
       - name: Set secret test ARNS
-        if: ${{ github.actor != 'dependabot[bot]' }}
+        if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.fork != true }}
         run: |
           echo "TEST_SECRETSMANAGER_ARNS=${{ secrets.TEST_SECRETSMANAGER_ARNS }}" >> $GITHUB_ENV
           echo "TEST_PARAMSTORE_ARNS=${{ secrets.TEST_PARAMSTORE_ARNS }}" >> $GITHUB_ENV
