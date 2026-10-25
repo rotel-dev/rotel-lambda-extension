@@ -21,7 +21,7 @@ use rotel_extension::env::{EnvArnParser, resolve_secrets};
 use rotel_extension::lambda;
 use rotel_extension::lambda::telemetry_api::TelemetryAPI;
 use rotel_extension::lifecycle::flush_control::{
-    Clock, DEFAULT_FLUSH_INTERVAL_MILLIS, FlushControl, FlushMode,
+    Clock, DEFAULT_FLUSH_INTERVAL_MILLIS, FlushControl, FlushMode, FlushPolicy,
 };
 use rustls::crypto::CryptoProvider;
 use std::collections::HashMap;
@@ -51,6 +51,11 @@ pub const FLUSH_LOGS_TIMEOUT_MILLIS: u64 = 100; // can be short, simply forces b
 pub const FLUSH_PIPELINE_TIMEOUT_MILLIS: u64 = 500;
 pub const FLUSH_EXPORTERS_TIMEOUT_MILLIS: u64 = 3_000;
 
+// Lambda gives external extensions two seconds in total to shut down. Spend most of it
+// exporting what is still buffered, and keep the rest for tearing down the pipelines.
+pub const SHUTDOWN_TOTAL_MILLIS: u64 = 2_000;
+pub const SHUTDOWN_FLUSH_TIMEOUT_MILLIS: u64 = 1_300;
+
 #[derive(Debug, Parser)]
 #[command(name = "rotel-lambda-extension")]
 #[command(bin_name = "rotel-lambda-extension")]
@@ -71,6 +76,28 @@ struct Arguments {
     #[arg(long, global = true, env = "ROTEL_ENVIRONMENT", default_value = "dev")]
     /// Environment
     environment: String,
+
+    #[arg(
+        value_enum,
+        long,
+        env = "ROTEL_LAMBDA_FLUSH_MODE",
+        default_value = "adaptive"
+    )]
+    /// When to export: `adaptive` switches to periodic flushing at the start of
+    /// invocations once the invocation rate is regular; `after-call` always flushes
+    /// after the response, so nothing is buffered while the environment is frozen.
+    lambda_flush_mode: LambdaFlushModeArg,
+
+    #[arg(
+        long,
+        env = "ROTEL_LAMBDA_FORWARD_FUNCTION_LOGS",
+        default_value_t = true,
+        action = clap::ArgAction::Set,
+        value_parser = clap::builder::BoolishValueParser::new()
+    )]
+    /// Export the function's stdout and stderr as logs. Turn this off when the
+    /// function already exports its logs over OTLP, or every line arrives twice.
+    lambda_forward_function_logs: bool,
 
     // This is ignored in these options, but we keep it here to avoid an error on unknown
     // options
@@ -93,6 +120,21 @@ struct EnvFileArguments {
 pub enum LogFormatArg {
     Text,
     Json,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, ValueEnum)]
+pub enum LambdaFlushModeArg {
+    Adaptive,
+    AfterCall,
+}
+
+impl From<LambdaFlushModeArg> for FlushPolicy {
+    fn from(arg: LambdaFlushModeArg) -> Self {
+        match arg {
+            LambdaFlushModeArg::Adaptive => FlushPolicy::Adaptive,
+            LambdaFlushModeArg::AfterCall => FlushPolicy::AfterCall,
+        }
+    }
 }
 
 fn main() -> ExitCode {
@@ -139,6 +181,8 @@ fn main() -> ExitCode {
         port_map,
         telemetry_listener,
         &opt.environment,
+        opt.lambda_flush_mode.into(),
+        opt.lambda_forward_function_logs,
     ) {
         Ok(_) => {}
         Err(e) => {
@@ -197,6 +241,8 @@ async fn run_extension(
     port_map: HashMap<SocketAddr, Listener>,
     telemetry_listener: Listener,
     env: &String,
+    flush_policy: FlushPolicy,
+    forward_function_logs: bool,
 ) -> Result<(), BoxError> {
     let mut tapi_join_set = JoinSet::new();
     let mut agent_join_set = JoinSet::new();
@@ -270,6 +316,7 @@ async fn run_extension(
         client.clone(),
         &r.extension_id,
         &telemetry_listener.bound_address()?,
+        forward_function_logs,
     )
     .await
     {
@@ -301,7 +348,8 @@ async fn run_extension(
     };
     handle_next_response(next_evt);
 
-    let mut flush_control = FlushControl::new(SystemClock {});
+    info!(?flush_policy, forward_function_logs, "Using flush policy");
+    let mut flush_control = FlushControl::with_policy(SystemClock {}, flush_policy);
 
     'outer: loop {
         let mode = flush_control.pick();
@@ -428,7 +476,24 @@ async fn run_extension(
     }
 
     // We have two seconds to completely shutdown
-    let final_stop = Instant::now().add(Duration::from_secs(2));
+    let final_stop = Instant::now().add(Duration::from_millis(SHUTDOWN_TOTAL_MILLIS));
+
+    // Export what is still buffered (in periodic mode, up to one flush interval of
+    // telemetry) before the pipelines are cancelled; otherwise it is dropped.
+    if timeout(
+        Duration::from_millis(SHUTDOWN_FLUSH_TIMEOUT_MILLIS),
+        force_flush(
+            &mut flush_logs_tx,
+            &mut flush_pipeline_tx,
+            &mut flush_exporters_tx,
+            &mut default_flush_interval,
+        ),
+    )
+    .await
+    .is_err()
+    {
+        warn!("Timed out flushing telemetry on shutdown");
+    }
 
     // Wait up to 500ms for the TelemetryAPI to shutdown, this will stop the logs pipeline
     telemetry_cancel.cancel();

@@ -113,14 +113,11 @@ pub async fn telemetry_subscribe(
     client: Client<HttpConnector, Full<Bytes>>,
     ext_id: &str,
     addr: &SocketAddr,
+    forward_function_logs: bool,
 ) -> Result<(), BoxError> {
     let sub = serde_json::json!(TelemetryAPISubscribe {
         schema_version: TELEMETRY_API_SCHEMA.to_string(),
-        types: vec![
-            "platform".to_string(),
-            "function".to_string(),
-            "extension".to_string()
-        ],
+        types: subscription_types(forward_function_logs),
         buffering: TelemetryAPISubscribeBuffering {
             // todo: these are the defaults from API ref, consider adjusting
             max_items: 1000,
@@ -154,6 +151,19 @@ pub async fn telemetry_subscribe(
     Ok(())
 }
 
+/// The Telemetry API record types to subscribe to. Platform records drive the
+/// flush after each invocation and extension records carry this extension's own
+/// logs, so both are always on. Function records are the function's stdout and
+/// stderr; skip them when the function already exports its logs over OTLP.
+fn subscription_types(forward_function_logs: bool) -> Vec<String> {
+    let mut types = vec!["platform".to_string()];
+    if forward_function_logs {
+        types.push("function".to_string());
+    }
+    types.push("extension".to_string());
+    types
+}
+
 fn lambda_api_url(path: &str) -> Result<String, BoxError> {
     let base_api = std::env::var("AWS_LAMBDA_RUNTIME_API")
         .map_err(|e| format!("Unable to read AWS_LAMBDA_RUNTIME_API: {:?}", e))?;
@@ -162,5 +172,23 @@ fn lambda_api_url(path: &str) -> Result<String, BoxError> {
         Ok(format!("{}{}", base_api, path))
     } else {
         Ok(format!("http://{}{}", base_api, path))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::subscription_types;
+
+    #[test]
+    fn test_subscribes_to_function_logs_by_default() {
+        assert_eq!(
+            subscription_types(true),
+            vec!["platform", "function", "extension"]
+        );
+    }
+
+    #[test]
+    fn test_skips_function_logs_when_disabled() {
+        assert_eq!(subscription_types(false), vec!["platform", "extension"]);
     }
 }

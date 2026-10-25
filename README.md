@@ -171,6 +171,14 @@ If the extension detects a regular invocation pattern—such as invocations occu
 
 For long-running invocations, a **global backup timer** is used to flush telemetry periodically. This timer is reset whenever a regular flush occurs, ensuring that telemetry is still sent even if invocation patterns become irregular.
 
+Set `ROTEL_LAMBDA_FLUSH_MODE=after-call` to always flush at the end of each invocation. Periodic flushing holds telemetry while the execution environment is frozen between invocations; if Lambda reclaims an idle environment, whatever is still buffered must be exported within the shutdown window. Flushing after every call keeps nothing buffered across invocations, at the cost of the billed duration described above. The default is `adaptive`.
+
+On shutdown the extension flushes any buffered telemetry before stopping its exporters.
+
+## Function logs
+
+The extension subscribes to the Lambda Telemetry API and exports the function's stdout and stderr as logs. If your function already exports its logs over OTLP (for example through the OpenTelemetry SDK's log provider), every line would arrive twice. Set `ROTEL_LAMBDA_FORWARD_FUNCTION_LOGS=false` to skip function logs; the extension's own logs are still exported. The default is `true`.
+
 ## Examples
 
 These are example repos demonstrating how to use the Rotel Lambda Extension.

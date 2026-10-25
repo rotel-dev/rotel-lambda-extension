@@ -20,10 +20,23 @@ pub trait Clock {
     fn now(&self) -> u64;
 }
 
+/// How the extension decides when to export.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum FlushPolicy {
+    /// Flush after every invocation until a regular invocation rate is detected,
+    /// then flush periodically at the start of invocations.
+    #[default]
+    Adaptive,
+    /// Always flush after the function's response is sent. Nothing is held while the
+    /// execution environment is frozen, so nothing is lost if it is reclaimed while idle.
+    AfterCall,
+}
+
 pub struct FlushControl<C: Clock> {
     rate: InvocationRate,
     inner: Arc<Mutex<Inner>>,
     clock: C,
+    policy: FlushPolicy,
 }
 
 struct Inner {
@@ -56,12 +69,17 @@ impl<C: Clock> PeriodicFlushControl<C> {
 
 impl<C: Clock + Clone> FlushControl<C> {
     pub fn new(clock: C) -> Self {
+        Self::with_policy(clock, FlushPolicy::default())
+    }
+
+    pub fn with_policy(clock: C, policy: FlushPolicy) -> Self {
         Self {
             clock: clock.clone(),
             rate: InvocationRate::default(),
             inner: Arc::new(Mutex::new(Inner {
                 last_flush: clock.now(),
             })),
+            policy,
         }
     }
 
@@ -69,7 +87,12 @@ impl<C: Clock + Clone> FlushControl<C> {
         let now_millis = self.clock.now();
         self.rate.add(now_millis);
 
-        let mode = match self.rate.is_faster_than(ACTIVE_INVOCATION_RATE_MILLIS) {
+        let adaptive = match self.policy {
+            FlushPolicy::AfterCall => None,
+            FlushPolicy::Adaptive => self.rate.is_faster_than(ACTIVE_INVOCATION_RATE_MILLIS),
+        };
+
+        let mode = match adaptive {
             // Not initialized, stick to flush per call
             None => AfterCall,
 
@@ -179,6 +202,37 @@ mod tests {
         match flush_control.pick() {
             FlushMode::Periodic(_) => {}
             _ => panic!("Expected Periodic mode for fast invocations"),
+        }
+    }
+
+    #[test]
+    fn test_after_call_policy_never_goes_periodic() {
+        let clock = TestClock::new(1000);
+        let mut flush_control = FlushControl::with_policy(clock.clone(), FlushPolicy::AfterCall);
+
+        // The same fast rate that switches the adaptive policy to Periodic
+        for _ in 1..=50 {
+            clock.advance(ACTIVE_INVOCATION_RATE_MILLIS / 10);
+            match flush_control.pick() {
+                FlushMode::AfterCall => {}
+                _ => panic!("Expected AfterCall mode for every invocation"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_default_policy_is_adaptive() {
+        let clock = TestClock::new(1000);
+        let mut flush_control = FlushControl::new(clock.clone());
+
+        for _ in 1..=20 {
+            clock.advance(ACTIVE_INVOCATION_RATE_MILLIS / 2);
+            let _ = flush_control.pick();
+        }
+
+        match flush_control.pick() {
+            FlushMode::Periodic(_) => {}
+            _ => panic!("Expected the default policy to switch to Periodic"),
         }
     }
 
