@@ -1,17 +1,17 @@
 # Rotel Lambda Extension
 
-Rotel Lambda Extension is an advanced AWS Lambda extension layer, built on top of [Rotel](https://github.com/streamfold/rotel). Rotel is lightweight and perfectly suited for collecting OpenTelemetry data in resource-constrained environments. By minimizing binary size, reducing cold start latency, and lowering memory overhead, this extension optimizes performance and cost efficiency in AWS Lambda deployments.
+Rotel Lambda Extension is an advanced AWS Lambda extension layer, built on top of [Rotel](https://github.com/rotel-dev/rotel). Rotel is lightweight and perfectly suited for collecting OpenTelemetry data in resource-constrained environments. By minimizing binary size, reducing cold start latency, and lowering memory overhead, this extension optimizes performance and cost efficiency in AWS Lambda deployments.
 
 ![Coldstart Comparison](/contrib/coldstarts.png)
 
-_This chart compares cold start times between Rotel, the [OpenTelemetry Lambda](https://github.com/open-telemetry/opentelemetry-lambda/blob/main/collector/README.md), and the [Datadog OTEL Lambda](https://docs.datadoghq.com/serverless/aws_lambda/opentelemetry/?tab=python) layers. Check out the benchmark code [here](https://github.com/streamfold/python-lambda-benchmark)._
+_This chart compares cold start times between Rotel, the [OpenTelemetry Lambda](https://github.com/open-telemetry/opentelemetry-lambda/blob/main/collector/README.md), and the [Datadog OTEL Lambda](https://docs.datadoghq.com/serverless/aws_lambda/opentelemetry/?tab=python) layers. Check out the benchmark code [here](https://github.com/rotel-dev/python-lambda-benchmark)._
 
 The Rotel Lambda Extension integrates with the Lambda [TelemetryAPI](https://docs.aws.amazon.com/lambda/latest/dg/telemetry-api.html) to collect **function logs** and **extension logs** and will export them to the configured exporter. This can reduce your Lambda observability costs if you combine it with [disabling CloudWatch Logs](#disabling-cloudwatch-logs).
 
 ## Using
 
 Choose the Lambda layer that matches your Lambda runtime architecture. The `{version}` field
-is dependent on the AWS region that you are deploying into. Check the [releases](https://github.com/streamfold/rotel-lambda-extension/releases)
+is dependent on the AWS region that you are deploying into. Check the [releases](https://github.com/rotel-dev/rotel-lambda-extension/releases)
 page for the latest version numbers that correspond to your region.
 
 | Architecture | ARN                                                                          |
@@ -39,13 +39,13 @@ The Rotel Lambda layer can be used alongside the language support extension laye
 To use a language layer, pick the extension layer ARN that matches your runtime language and include it **in addition** to the Rotel layer ARN above. You will need to set `AWS_LAMBDA_EXEC_WRAPPER` so that your code is auto-instrumented on start up. Make sure to consult the documentation for your instrumentation layer.
 
 To see how this works in practice, check out this Node.js
-[example ✨](https://github.com/streamfold/nodejs-aws-lambda-example).
+[example ✨](https://github.com/rotel-dev/nodejs-aws-lambda-example).
 
 ## Configuration
 
 The Rotel Lambda Extension is configured using the same environment variables documented
 for Rotel,
-[documented here](https://github.com/streamfold/rotel?tab=readme-ov-file#configuration).
+[documented here](https://github.com/rotel-dev/rotel?tab=readme-ov-file#configuration).
 
 To ease configuration for Lambda environments, you can set `ROTEL_ENV_FILE` to the path
 name of a file and that file will be interpreted as an `.env` file. For example, set
@@ -146,7 +146,7 @@ ROTEL_OTEL_RESOURCE_ATTRIBUTES="service.name=my-lambda-api,service.version=2.0.0
 ```
 
 This will insert or replace those resource attributes on all traces, logs, and metrics. See Rotel
-[docs](https://github.com/streamfold/rotel?tab=readme-ov-file#setting-resource-attributes) for more info.
+[docs](https://github.com/rotel-dev/rotel?tab=readme-ov-file#setting-resource-attributes) for more info.
 
 ## Disabling CloudWatch Logs
 
@@ -183,8 +183,8 @@ The extension subscribes to the Lambda Telemetry API and exports the function's 
 
 These are example repos demonstrating how to use the Rotel Lambda Extension.
 
-- [Node.js Auto Instrumentation](https://github.com/streamfold/nodejs-aws-lambda-example): This uses the Node.js auto instrumentation [layer](https://github.com/open-telemetry/opentelemetry-lambda/blob/main/nodejs/README.md) to instrument a Node.js app and emit metrics, logs and traces to Honeycomb.
-- [Python + Clickhouse](https://github.com/streamfold/python-aws-lambda-clickhouse-example): Python application with manual OpenTelemetry instrumentation, sending OpenTelemetry traces and logs to Clickhouse. All Lambda logs are converted to OTel and immediately sent to Clickhouse, so this can avoid expensive Cloudwatch log costs. This example uses the JSON data type by default to improve the query support for OTel key/value attributes.
+- [Node.js Auto Instrumentation](https://github.com/rotel-dev/nodejs-aws-lambda-example): This uses the Node.js auto instrumentation [layer](https://github.com/open-telemetry/opentelemetry-lambda/blob/main/nodejs/README.md) to instrument a Node.js app and emit metrics, logs and traces to Honeycomb.
+- [Python + Clickhouse](https://github.com/rotel-dev/python-aws-lambda-clickhouse-example): Python application with manual OpenTelemetry instrumentation, sending OpenTelemetry traces and logs to Clickhouse. All Lambda logs are converted to OTel and immediately sent to Clickhouse, so this can avoid expensive Cloudwatch log costs. This example uses the JSON data type by default to improve the query support for OTel key/value attributes.
 
 ## Community
 
