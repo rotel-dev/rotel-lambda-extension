@@ -1855,8 +1855,8 @@ dependencies = [
 
 [[package]]
 name = "rotel"
-version = "0.2.4"
-source = "git+https://github.com/streamfold/rotel?rev=v0.2.4#c692fc4be59920311431def8c582ae35da2978de"
+version = "0.2.7"
+source = "git+https://github.com/streamfold/rotel?rev=v0.2.7#69ee58e801c4f68b4c0c11395f130fe8267dd14c"
 dependencies = [
  "base64",
  "bstr",
@@ -2710,7 +2710,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "utilities"
 version = "0.0.1"
-source = "git+https://github.com/streamfold/rotel?rev=v0.2.4#c692fc4be59920311431def8c582ae35da2978de"
+source = "git+https://github.com/streamfold/rotel?rev=v0.2.7#69ee58e801c4f68b4c0c11395f130fe8267dd14c"
 dependencies = [
  "chrono",
  "opentelemetry-proto",
